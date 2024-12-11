@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Python built-in modules
-import argparse, os, pickle, sys, shutil, subprocess, tempfile, time
+import argparse, io, os, pickle, sys, shutil, subprocess, tempfile, time
 from typing import List, Tuple, Optional
 from pathlib import Path
 
@@ -77,15 +77,14 @@ class PdfOCRer:
             converted_bbox.append([round(x_pts, 1), round(y_pts, 1)])
         return converted_bbox
 
-    def create_text_layer_pdf(self, input_pdf, ocr_results: List[List[Tuple]], page_num: int, page_dims: Tuple[float, float]):
-        """Create a single-page PDF with OCR text layer"""
-
-        ocr_pdf_path = f"{self.ocr_dir}/ocr_{page_num}.pdf"
-        page_pdf_path = f"{self.ocr_dir}/page_{page_num}.pdf"
+    def create_text_layer(self, ocr_results: List[List[Tuple]], page_dims: Tuple[float, float]) -> PdfReader:
+        """ Create a single-page PDF with OCR text layer. """
 
         width_pts, height_pts = page_dims
         
-        c = canvas.Canvas(str(ocr_pdf_path))
+        packet = io.BytesIO()  # create canvas in memory to avoid saving to file.
+        c = canvas.Canvas(packet, pagesize=(width_pts, height_pts))
+
         c.setPageSize((width_pts, height_pts))
         c.setFillColor(Color(0, 0, 0, alpha=0))
         
@@ -146,15 +145,21 @@ class PdfOCRer:
         
         c.save()
 
+        packet.seek(0)
+        return PdfReader(packet)
+    
+    def overlay_text_layer(self, input_pdf: str, text_layer: PdfReader, page_num: int) -> str:
+        """ put the text layer onto the original page. """
         # Create a PdfReader object for the original PDF
         pdf_writer = PdfWriter()
-        tmp_reader = PdfReader(ocr_pdf_path)
         raw_reader = PdfReader(input_pdf)
             
         # Create a new page with the overlay
         page = raw_reader.pages[page_num-1]
-        page.merge_page(tmp_reader.pages[0])
+        page.merge_page(text_layer.pages[0])
         pdf_writer.add_page(page)
+
+        page_pdf_path = f"{self.ocr_dir}/page_{page_num}.pdf"
 
         # Write out the modified PDF
         with open(page_pdf_path, 'wb') as output_file:
@@ -188,7 +193,9 @@ class PdfOCRer:
 
         self.logger.info(f"page dims: {page_dims[0]} x {page_dims[1]} points")
         
-        page_pdf_path = self.create_text_layer_pdf(pdf_path, ocr_results[0], page_num, page_dims)
+        text_layer_reader = self.create_text_layer(ocr_results[0], page_dims)
+
+        page_pdf_path = self.overlay_text_layer(pdf_path, text_layer_reader, page_num)
 
         self.logger.info(f"page pdf: {page_pdf_path}")
         
@@ -209,8 +216,6 @@ class PdfOCRer:
                 ocr_pdf_path = self.process_single_page(input_pdf, page_num, ocr_engine)
                 
                 ocr_pdf_paths.append(ocr_pdf_path)
-
-                break
             
             self.logger.info("Merging PDFs ...")
 
