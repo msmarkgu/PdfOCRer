@@ -15,7 +15,7 @@ PdfOCRer processes a PDF in four steps:
 
 The script is tested in Python 3.10. It should work as long as the dependencies work.
 
-- Paddle OCR: follow its instruction [here](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/quick_start.html).
+- Paddle OCR and PaddlePaddle: follow its instruction [here](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/quick_start.html).
 
 - PyPDF2, Pillow, ReportLab: ``` pip install pillow PyPDF2 reportlab ```
 
@@ -23,11 +23,23 @@ The script is tested in Python 3.10. It should work as long as the dependencies 
 
     -- on Linux/Ubuntu: ``` apt-get install ghostscript ```, 
 
-    -- on MacOS machine: ``` brew install ghostscript ```.
+    -- on MacOS machine: ``` brew install ghostscript ```,
+
+    -- on Windows machine: [download 32/64 bit exe](https://www.ghostscript.com/releases/gsdnld.html), run it to install.
+
+# Installation
+
+Simply run in command line:
+
+```
+pip install pdfocrer
+```
+
+It will install all dependencies but Ghostscript.
 
 # How to use
 
-Open a terminal, run the script like following:
+To use the script in command line, run it like following:
 
 ```
 python pdf_ocrer.py -i <input_pdf> -o <output_pdf> -l <language> -t <temp_dir> [--debug]
@@ -37,6 +49,25 @@ Example:
 
 ```
 python pdf_ocrer.py -i ../example/scanned_page.pdf -o ../example/scanned_page.ocr.pdf -t ../temp -l ch --debug
+```
+
+To use it in python code, do something like:
+
+```
+import os, sys
+
+from pdfocrer.pdf_ocrer import PdfOCRer
+
+input = './example/scanned_page.pdf'
+output = './example/scanned_page.ocr.pdf'
+isDebug = True
+tempDir = './temp'
+language = 'ch'  # or 'en', 'korean', 'japan', 'latin', 'arabic',  etc.
+
+pp = PdfOCRer(isDebug, tempDir)
+
+pp.process_pdf(input, output, language)
+
 ```
 
 # Acknowledgement

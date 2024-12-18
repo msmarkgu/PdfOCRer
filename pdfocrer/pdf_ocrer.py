@@ -15,7 +15,7 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.colors import Color
 
-from pdf_util import RootLogger, PdfUtil
+from .pdf_util import RootLogger, PdfUtil
 
 class PdfOCRer:
     def __init__(self, debug: bool = False, temp_dir: Optional[str] = '.'):
